@@ -1,5 +1,4 @@
 
-
 ```markdown
 # 🎯 Hack The Box: Fawn Write-up
 
