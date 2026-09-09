@@ -1,4 +1,4 @@
-Here is the complete write-up for **Fawn** formatted inside a single code block so you can easily hit **Copy** and paste it straight into your GitHub repository:
+
 
 ```markdown
 # 🎯 Hack The Box: Fawn Write-up
